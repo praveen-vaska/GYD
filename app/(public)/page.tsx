@@ -185,7 +185,7 @@ export default function HomePage() {
     );
   });
 
-  const featuredDesigners = sortedNearby.slice(0, 6);
+  const featuredDesigners = sortedNearby.slice(0, 8);
   const hasStudioInImmediateArea =
     Boolean(activeReferenceLabel) &&
     featuredDesigners.some(
@@ -641,7 +641,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {featuredDesigners.map((entry, idx) => (
               <DesignerCard
                 key={entry.designer.id}

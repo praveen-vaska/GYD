@@ -16,7 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useGydStore } from "@/features/store/gyd-store";
-import { formatDistanceKm, getDesignerNeighborhood } from "@/lib/location/nearby";
+import {
+  formatDistanceKm,
+  getDesignerNeighborhood,
+} from "@/lib/location/nearby";
 import { cn, formatINR } from "@/lib/utils";
 import { DesignerProfile } from "@/types";
 
@@ -60,9 +63,9 @@ export function DesignerCard({
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.12 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.25) }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.24) }}
       className={cn(
-        "gyd-card group overflow-hidden flex",
+        "gyd-card group overflow-hidden flex h-full border border-brand-border-strong hover:border-brand-primary/40 hover:shadow-md",
         layout === "list" ? "flex-col sm:flex-row" : "flex-col"
       )}
     >
@@ -70,7 +73,7 @@ export function DesignerCard({
         className={cn(
           "relative overflow-hidden bg-brand-secondary/50 shrink-0",
           layout === "list"
-            ? "h-56 sm:h-auto sm:w-64"
+            ? "h-52 sm:h-auto sm:w-60"
             : "aspect-[4/3] w-full"
         )}
       >
@@ -78,20 +81,20 @@ export function DesignerCard({
           src={designer.avatarUrl}
           alt={`${designer.name} - ${designer.title}`}
           fill
-          sizes="(max-width: 768px) 100vw, 400px"
+          sizes="(max-width: 768px) 100vw, 380px"
           className="object-cover object-[50%_18%] transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
 
-        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
+        <div className="absolute left-2.5 top-2.5 flex flex-wrap items-center gap-1">
           {designer.isVerified && (
-            <Badge className="bg-brand-surface/95 text-brand-primary border-0 shadow-sm">
-              <BadgeCheck className="h-3.5 w-3.5 text-brand-accent" />
+            <Badge className="bg-brand-surface/95 text-brand-primary border-0 shadow-sm px-2 py-0.5 text-[10px]">
+              <BadgeCheck className="h-3 w-3 text-brand-accent" />
               Verified
             </Badge>
           )}
           {designer.isFeatured && (
-            <Badge tone="accent" className="shadow-sm">
+            <Badge tone="accent" className="shadow-sm px-2 py-0.5 text-[10px]">
               Featured
             </Badge>
           )}
@@ -102,17 +105,17 @@ export function DesignerCard({
           onClick={handleToggleFav}
           aria-label={fav ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-md transition-colors cursor-pointer",
+            "absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-md transition-colors cursor-pointer",
             fav
               ? "bg-brand-accent text-white"
               : "bg-black/40 text-white hover:bg-black/60"
           )}
         >
-          <Heart className={cn("h-4 w-4", fav && "fill-current")} />
+          <Heart className={cn("h-3.5 w-3.5", fav && "fill-current")} />
         </button>
 
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 text-white text-xs">
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 font-medium truncate">
+        <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 text-white text-[11px]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm px-2 py-0.5 font-medium truncate">
             <MapPin className="h-3 w-3 text-brand-accent shrink-0" />
             <span className="truncate">
               {neighborhood !== designer.city
@@ -120,18 +123,18 @@ export function DesignerCard({
                 : designer.city}
             </span>
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/50 backdrop-blur-sm px-2.5 py-1 font-semibold shrink-0">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/55 backdrop-blur-sm px-2 py-0.5 font-semibold shrink-0">
             <Star className="h-3 w-3 fill-brand-accent text-brand-accent" />
             {designer.rating.toFixed(1)} ({designer.reviewCount})
           </span>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col justify-between p-5">
-        <div className="space-y-3">
+      <div className="flex flex-1 flex-col justify-between p-4">
+        <div className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-editorial text-xl font-semibold text-brand-text leading-snug">
+              <h3 className="font-editorial text-lg font-semibold text-brand-text leading-snug truncate">
                 <Link
                   href={`/designers/${designer.id}`}
                   className="hover:text-brand-primary transition-colors"
@@ -139,49 +142,63 @@ export function DesignerCard({
                   {designer.name}
                 </Link>
               </h3>
-              <p className="mt-0.5 text-sm font-medium text-brand-muted-fg line-clamp-1">
+              <p className="mt-0.5 text-xs font-medium text-brand-muted-fg line-clamp-1">
                 {designer.title}
               </p>
             </div>
             {typeof computedDistance === "number" && (
-              <Badge tone="info" className="shrink-0 text-[11px]">
-                <Navigation className="h-3 w-3" />
+              <Badge tone="info" className="shrink-0 text-[10px] px-2 py-0.5">
+                <Navigation className="h-2.5 w-2.5" />
                 {formatDistanceKm(computedDistance)}
               </Badge>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            {designer.categoryNames.slice(0, 3).map((cat) => (
-              <Badge key={cat} tone="primary" className="text-[11px]">
+          <div className="flex flex-wrap gap-1">
+            {designer.categoryNames.slice(0, 2).map((cat) => (
+              <Badge
+                key={cat}
+                tone="primary"
+                className="text-[10px] px-2 py-0.5"
+              >
                 {cat}
               </Badge>
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-brand-text-secondary">
-            <span>{designer.experienceYears} yrs experience</span>
-            <span className="inline-flex items-center gap-1 text-brand-success font-medium">
-              <CalendarClock className="h-3.5 w-3.5" />
-              {designer.availabilitySummary}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-brand-text-secondary">
+            <span>{designer.experienceYears} yrs exp</span>
+            <span className="inline-flex items-center gap-1 text-brand-success font-medium truncate">
+              <CalendarClock className="h-3 w-3 shrink-0" />
+              <span className="truncate">{designer.availabilitySummary}</span>
             </span>
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3 border-t border-brand-border pt-4">
-          <div>
-            <p className="text-[11px] uppercase tracking-wider text-brand-muted-fg font-semibold">
-              Starting at
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-brand-border pt-3">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-brand-muted-fg font-semibold">
+              From
             </p>
-            <p className="text-base font-bold text-brand-text">
+            <p className="text-sm font-bold text-brand-text truncate">
               {formatINR(designer.startingPriceInr)}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/designers/${designer.id}`}>View Profile</Link>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="h-8 px-2.5 text-xs"
+            >
+              <Link href={`/designers/${designer.id}`}>View</Link>
             </Button>
-            <Button asChild variant="primary" size="sm">
+            <Button
+              asChild
+              variant="primary"
+              size="sm"
+              className="h-8 px-3 text-xs"
+            >
               <Link href={`/book/${designer.id}`}>Book</Link>
             </Button>
           </div>

@@ -490,7 +490,7 @@ function ExploreContent() {
                 className={
                   viewMode === "list"
                     ? "grid gap-5 grid-cols-1"
-                    : "grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+                    : "grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
                 }
               >
                 {filtered.slice(0, visibleCount).map((entry, idx) => (
