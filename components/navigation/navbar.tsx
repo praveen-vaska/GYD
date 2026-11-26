@@ -37,7 +37,6 @@ export function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const {
     state,
-    loginDemoRole,
     logout,
   } = useGydStore();
 
@@ -187,34 +186,6 @@ export function Navbar() {
                         )}
                       </div>
                       <div className="border-t border-brand-border pt-1.5 mt-1">
-                        <p className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-muted">
-                          Switch Demo Role
-                        </p>
-                        <div className="grid grid-cols-2 gap-1.5 px-2 py-1">
-                          {(["CUSTOMER", "DESIGNER"] as const).map((r) => (
-                            <button
-                              key={r}
-                              type="button"
-                              onClick={() => {
-                                const s = loginDemoRole(r);
-                                setProfileMenuOpen(false);
-                                if (s) {
-                                  router.push(getRoleDashboardPath(s.role));
-                                } else {
-                                  router.push("/login");
-                                }
-                              }}
-                              className={cn(
-                                "rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors cursor-pointer",
-                                state.session?.role === r
-                                  ? "bg-brand-primary text-brand-primary-fg"
-                                  : "bg-brand-surface-muted text-brand-text-secondary hover:bg-brand-secondary"
-                              )}
-                            >
-                              {r.slice(0, 1) + r.slice(1).toLowerCase()}
-                            </button>
-                          ))}
-                        </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -222,7 +193,7 @@ export function Navbar() {
                             setProfileMenuOpen(false);
                             router.push("/");
                           }}
-                          className="mt-1 flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-brand-error hover:bg-brand-error-bg cursor-pointer"
+                          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-brand-error hover:bg-brand-error-bg cursor-pointer"
                         >
                           <LogOut className="h-4 w-4" />
                           Sign Out
@@ -295,32 +266,6 @@ export function Navbar() {
                     </Button>
                   </div>
                 )}
-
-                <div className="rounded-xl bg-brand-surface-muted p-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-brand-muted-fg mb-2">
-                    Quick Demo Portals
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(["CUSTOMER", "DESIGNER"] as const).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => {
-                          const s = loginDemoRole(r);
-                          setMobileOpen(false);
-                          if (s) {
-                            router.push(getRoleDashboardPath(s.role));
-                          } else {
-                            router.push("/login");
-                          }
-                        }}
-                        className="rounded-lg bg-brand-surface border border-brand-border px-2 py-1.5 text-xs font-semibold text-brand-text hover:bg-brand-secondary"
-                      >
-                        {r[0] + r.slice(1).toLowerCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </motion.div>
           )}

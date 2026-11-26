@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useGydStore } from "@/features/store/gyd-store";
-import { getRoleDashboardPath } from "@/lib/auth/session";
 import { cn, getInitials } from "@/lib/utils";
 import { UserRole } from "@/types";
 
@@ -54,7 +53,6 @@ export function DashboardShell({
   const {
     state,
     hydrated,
-    loginDemoRole,
     logout,
     markAllNotificationsRead,
     resetDemoState,
@@ -94,25 +92,6 @@ export function DashboardShell({
 
   const roleNotifications = state.notifications.filter((n) => n.role === role);
   const unreadNotifs = roleNotifications.filter((n) => !n.isRead).length;
-
-  const handleQuickPortalSwitch = (targetRole: UserRole) => {
-    if (targetRole === "ADMIN") return;
-    const sess = loginDemoRole(targetRole);
-    if (!sess) {
-      pushToast({
-        title: `${targetRole[0] + targetRole.slice(1).toLowerCase()} account unavailable`,
-        description: "This account is currently blocked or removed by Admin.",
-        type: "error",
-      });
-      return;
-    }
-    pushToast({
-      title: `Switched to ${targetRole.toLowerCase()} demo view`,
-      description: `Signed in as ${sess.name}`,
-      type: "info",
-    });
-    router.push(getRoleDashboardPath(targetRole));
-  };
 
   if (hydrated && isSessionBlocked) {
     return (
@@ -160,47 +139,66 @@ export function DashboardShell({
           <Badge tone="accent" className="mx-auto">
             {role === "ADMIN"
               ? "Restricted Administrator Operations"
-              : `Role-Protected ${role} Workspace`}
+              : role === "DESIGNER"
+                ? "Designer Partner Access Required"
+                : "Customer Sign In Required"}
           </Badge>
           <h1 className="font-editorial text-2xl sm:text-3xl font-semibold text-brand-text">
             {role === "ADMIN"
               ? "Administrator Authentication Required"
-              : `Sign in to access the ${portalTitle}`}
+              : role === "DESIGNER"
+                ? activeSession?.role === "CUSTOMER"
+                  ? "Partner Designer Account Required"
+                  : "Sign in to access Designer Studio"
+                : `Sign in to access the ${portalTitle}`}
           </h1>
           <p className="text-sm text-brand-text-secondary">
             {role === "ADMIN"
               ? "Unauthorized visitors, customers, and designers are restricted from the Admin console. Sign in with authorized administrator credentials to proceed."
-              : "GYD enforces role-based workspace access across Customer and Designer portals. Launch a demo session below or sign in with your credentials."}
+              : role === "DESIGNER"
+                ? activeSession?.role === "CUSTOMER"
+                  ? `You are signed in as a Customer (${activeSession.name}). Customer accounts cannot open Designer Studio — sign in with a Designer account or register as a partner designer.`
+                  : "Only registered partner designers can open Designer Studio. Sign in with your designer credentials or apply to register a designer profile."
+                : "Sign in or create a free customer account to view your bookings, wishlist, and designer messages."}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             {role === "ADMIN" ? (
               <Button asChild variant="primary">
                 <Link href="/admin/login">Administrator Sign In</Link>
               </Button>
-            ) : (
+            ) : role === "DESIGNER" ? (
               <>
                 <Button
                   variant="primary"
                   onClick={() => {
-                    const sess = loginDemoRole(role);
-                    if (!sess) {
-                      pushToast({
-                        title: "Account blocked or removed",
-                        description:
-                          "This demo account was blocked or removed in Admin moderation.",
-                        type: "error",
-                      });
-                    }
+                    if (activeSession) logout();
+                    router.push("/login?role=designer&next=/designer/dashboard");
                   }}
                 >
-                  Launch {role[0] + role.slice(1).toLowerCase()} Demo Session
+                  Designer Sign In
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/login">Go to Sign In</Link>
+                <Button asChild variant="accent">
+                  <Link href="/become-a-designer">Register as a Designer</Link>
                 </Button>
               </>
+            ) : (
+              <Button asChild variant="primary">
+                <Link href="/login?next=/customer/dashboard">
+                  Sign In / Create Account
+                </Link>
+              </Button>
             )}
           </div>
+          {role === "DESIGNER" && activeSession?.role === "CUSTOMER" && (
+            <div className="pt-1">
+              <Link
+                href="/customer/dashboard"
+                className="text-xs font-semibold text-brand-primary hover:underline"
+              >
+                ← Back to Customer Dashboard
+              </Link>
+            </div>
+          )}
           <div className="pt-2">
             <Link
               href="/"
@@ -260,31 +258,6 @@ export function DashboardShell({
       </div>
 
       <div className="space-y-3 pt-4 border-t border-brand-border">
-        {role !== "ADMIN" && (
-          <div className="rounded-2xl bg-brand-surface-muted p-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-brand-muted-fg mb-2">
-              Demo Portal Switcher
-            </p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {(["CUSTOMER", "DESIGNER"] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => handleQuickPortalSwitch(r)}
-                  className={cn(
-                    "rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer",
-                    role === r
-                      ? "bg-brand-primary text-brand-primary-fg"
-                      : "bg-brand-surface text-brand-text-secondary hover:bg-brand-secondary"
-                  )}
-                >
-                  {r[0] + r.slice(1).toLowerCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

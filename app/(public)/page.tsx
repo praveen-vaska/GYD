@@ -105,7 +105,6 @@ export default function HomePage() {
     setSelectedPlace,
     detectCurrentLocation,
     getDesignerDistanceKm,
-    loginDemoRole,
   } = useGydStore();
 
   const [searchService, setSearchService] = useState("");
@@ -144,17 +143,27 @@ export default function HomePage() {
   const safeSlideIdx = heroSlides.length > 0 ? slideIdx % heroSlides.length : 0;
   const activeSlide = heroSlides[safeSlideIdx] ?? HERO_CAROUSEL_SLIDES[0];
 
-  const handleDemoJump = (role: "CUSTOMER" | "DESIGNER", href: string) => {
-    const sess = loginDemoRole(role);
-    if (!sess) {
-      pushToast({
-        title: "Account blocked or removed",
-        description: "This account is currently suspended or inactive.",
-        type: "error",
-      });
+  const handlePortalNavigate = (role: "CUSTOMER" | "DESIGNER", href: string) => {
+    if (state.session?.role === role) {
+      router.push(href);
       return;
     }
-    router.push(href);
+    if (role === "DESIGNER") {
+      pushToast({
+        title: "Designer login required",
+        description:
+          "Sign in with a Designer account or register via Become a Designer.",
+        type: "info",
+      });
+      router.push("/login?role=designer&next=/designer/dashboard");
+      return;
+    }
+    pushToast({
+      title: "Customer login required",
+      description: "Sign in or create an account to open your Customer Portal.",
+      type: "info",
+    });
+    router.push("/login?next=/customer/dashboard");
   };
   const activeReferenceCity =
     state.userLocation?.city ??
@@ -786,9 +795,11 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => handleDemoJump("DESIGNER", "/designer/dashboard")}
+                  onClick={() => handlePortalNavigate("DESIGNER", "/designer/dashboard")}
                 >
-                  Preview Designer Studio
+                  {state.session?.role === "DESIGNER"
+                    ? "Open Designer Studio"
+                    : "Designer Login"}
                 </Button>
               </div>
             </div>
@@ -819,14 +830,14 @@ export default function HomePage() {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => handleDemoJump("CUSTOMER", "/customer/dashboard")}
+                onClick={() => handlePortalNavigate("CUSTOMER", "/customer/dashboard")}
               >
                 Customer Portal
               </Button>
               <Button
                 variant="accent"
                 size="md"
-                onClick={() => handleDemoJump("DESIGNER", "/designer/dashboard")}
+                onClick={() => handlePortalNavigate("DESIGNER", "/designer/dashboard")}
               >
                 Designer Studio
               </Button>

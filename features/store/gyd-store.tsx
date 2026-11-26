@@ -668,7 +668,7 @@ export function GydStoreProvider({ children }: { children: React.ReactNode }) {
 
   const loginDemoRole = useCallback(
     (role: UserRole): SessionPayload | null => {
-      if (role === "ADMIN") {
+      if (role === "ADMIN" || role === "DESIGNER") {
         return null;
       }
       const cur = stateRef.current;
@@ -678,22 +678,11 @@ export function GydStoreProvider({ children }: { children: React.ReactNode }) {
       if (!existingUser || existingUser.status !== "ACTIVE") {
         return null;
       }
-      if (role === "DESIGNER" && "designerId" in account && account.designerId) {
-        const des = cur.designers.find((d) => d.id === account.designerId);
-        if (
-          !des ||
-          des.approvalStatus === "SUSPENDED" ||
-          des.approvalStatus === "REJECTED"
-        ) {
-          return null;
-        }
-      }
       const payload: SessionPayload = {
         userId: account.userId,
         name: existingUser?.name ?? account.name,
         email: existingUser?.email ?? account.email,
         role: account.role,
-        designerId: "designerId" in account ? account.designerId : undefined,
         city: existingUser?.city ?? account.city,
         isDemoSession: true,
       };
@@ -747,6 +736,12 @@ export function GydStoreProvider({ children }: { children: React.ReactNode }) {
       const demo = DEMO_ACCOUNTS.find(
         (a) => a.email.toLowerCase() === normalized
       );
+      if (demo && password !== "GydDemo@2026") {
+        return {
+          ok: false,
+          error: "Invalid password for this demo account.",
+        };
+      }
       if (!demo && password.length < 6) {
         return {
           ok: false,

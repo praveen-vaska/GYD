@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, KeyRound, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Briefcase,
+  KeyRound,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { GydLogo } from "@/components/common/gyd-logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,10 +26,16 @@ import { z } from "zod";
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerCustomerSchema>;
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { pushToast } = useToast();
   const { loginWithCredentials, registerCustomer, loginDemoRole } = useGydStore();
+
+  const roleIntent = searchParams.get("role");
+  const nextPath = searchParams.get("next");
+  const isDesignerIntent = roleIntent === "designer";
+
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const [authError, setAuthError] = useState("");
 
@@ -51,11 +63,27 @@ export default function LoginPage() {
       setAuthError(res.error ?? "Invalid credentials.");
       return;
     }
+    if (isDesignerIntent && res.data.role !== "DESIGNER") {
+      setAuthError(
+        "Signed in as Customer, not a Designer Studio account. Sign in with Designer credentials or apply via Become a Designer."
+      );
+      return;
+    }
     pushToast({
       title: `Welcome back, ${res.data.name}`,
-      description: `Signed in to ${res.data.role.toLowerCase()} portal (Demo Mode).`,
+      description: `Signed in to ${res.data.role.toLowerCase()} portal.`,
       type: "success",
     });
+    if (
+      nextPath &&
+      nextPath.startsWith("/") &&
+      !nextPath.startsWith("/admin") &&
+      ((res.data.role === "DESIGNER" && nextPath.startsWith("/designer")) ||
+        (res.data.role === "CUSTOMER" && nextPath.startsWith("/customer")))
+    ) {
+      router.push(nextPath);
+      return;
+    }
     router.push(getRoleDashboardPath(res.data.role));
   };
 
@@ -73,11 +101,15 @@ export default function LoginPage() {
     }
     pushToast({
       title: "Welcome to GYD!",
-      description: "Your customer account is active in Demo Mode.",
+      description: "Your customer account is active.",
       type: "success",
     });
     router.push("/customer/dashboard");
   };
+
+  const customerDemoAccounts = DEMO_ACCOUNTS.filter(
+    (acc) => acc.role === "CUSTOMER"
+  );
 
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col justify-center px-4 py-12">
@@ -93,47 +125,58 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Unified Login / New User Switcher */}
-          <div className="grid grid-cols-2 rounded-2xl bg-brand-surface-muted p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthTab("login");
-                setAuthError("");
-              }}
-              className={`rounded-xl py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
-                authTab === "login"
-                  ? "bg-brand-primary text-brand-primary-fg shadow-sm"
-                  : "text-brand-text-secondary hover:text-brand-text"
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthTab("register");
-                setAuthError("");
-              }}
-              className={`rounded-xl py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
-                authTab === "register"
-                  ? "bg-brand-primary text-brand-primary-fg shadow-sm"
-                  : "text-brand-text-secondary hover:text-brand-text"
-              }`}
-            >
-              New User? Create Account
-            </button>
-          </div>
+          {!isDesignerIntent && (
+            <div className="grid grid-cols-2 rounded-2xl bg-brand-surface-muted p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab("login");
+                  setAuthError("");
+                }}
+                className={`rounded-xl py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
+                  authTab === "login"
+                    ? "bg-brand-primary text-brand-primary-fg shadow-sm"
+                    : "text-brand-text-secondary hover:text-brand-text"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab("register");
+                  setAuthError("");
+                }}
+                className={`rounded-xl py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
+                  authTab === "register"
+                    ? "bg-brand-primary text-brand-primary-fg shadow-sm"
+                    : "text-brand-text-secondary hover:text-brand-text"
+                }`}
+              >
+                New User? Create Account
+              </button>
+            </div>
+          )}
 
           <div className="space-y-1">
-            <Badge tone="primary">Demo Authentication Ready</Badge>
+            <Badge tone={isDesignerIntent ? "accent" : "primary"}>
+              {isDesignerIntent
+                ? "Designer Studio Authentication"
+                : "GYD Account Access"}
+            </Badge>
             <h1 className="font-editorial text-3xl font-semibold text-brand-text">
-              {authTab === "login" ? "Sign in to GYD" : "Create Your GYD Account"}
+              {isDesignerIntent
+                ? "Sign in to Designer Studio"
+                : authTab === "login"
+                  ? "Sign in to GYD"
+                  : "Create Your GYD Account"}
             </h1>
             <p className="text-sm text-brand-text-secondary">
-              {authTab === "login"
-                ? "Access your bookings, saved stylists, or designer studio."
-                : "New customer? Set up your profile in seconds to book designers."}
+              {isDesignerIntent
+                ? "Only registered designers can access Designer Studio. Sign in below or apply to register a new designer studio."
+                : authTab === "login"
+                  ? "Access your bookings, saved stylists, or registered designer studio."
+                  : "New customer? Set up your profile in seconds to book designers."}
             </p>
           </div>
 
@@ -143,7 +186,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {authTab === "login" ? (
+          {authTab === "login" || isDesignerIntent ? (
             <form
               onSubmit={loginForm.handleSubmit(onLoginSubmit)}
               className="space-y-4"
@@ -154,7 +197,11 @@ export default function LoginPage() {
                 </label>
                 <Input
                   type="email"
-                  placeholder="customer.demo@gyd.in"
+                  placeholder={
+                    isDesignerIntent
+                      ? "designer@yourstudio.in"
+                      : "customer@example.in"
+                  }
                   {...loginForm.register("email")}
                 />
                 {loginForm.formState.errors.email && (
@@ -195,7 +242,7 @@ export default function LoginPage() {
                 disabled={loginForm.formState.isSubmitting}
                 className="w-full"
               >
-                Sign In
+                {isDesignerIntent ? "Sign In to Designer Studio" : "Sign In"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
@@ -306,90 +353,125 @@ export default function LoginPage() {
           )}
 
           <div className="border-t border-brand-border pt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-brand-text-secondary">
-            <span>Are you a stylist or decorator?</span>
+            <span>Not registered as a designer yet?</span>
             <Link
               href="/become-a-designer"
               className="font-semibold text-brand-accent hover:underline"
             >
-              Apply as a Designer →
+              Register as a Designer →
             </Link>
           </div>
         </div>
 
-        {/* Clearly Labeled Demo Credentials Panel */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="gyd-card p-6 space-y-4">
+          <div className="gyd-card p-6 space-y-4 border border-brand-border-strong">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-4.5 w-4.5 text-brand-accent" />
+              <Briefcase className="h-4.5 w-4.5 text-brand-accent" />
               <h2 className="font-editorial text-2xl font-semibold text-brand-text">
-                Instant Demo Access Portals
+                Partner Designer Registration
               </h2>
             </div>
             <p className="text-xs text-brand-text-secondary leading-relaxed">
-              This environment uses local demonstration sessions instead of a live
-              production Auth.js database. Launch any role immediately:
+              Designer Studio access is restricted to registered designers. If you
+              are not registered yet, submit your studio profile and verification
+              credentials to open your Designer Dashboard.
             </p>
-
-            <div className="space-y-3">
-              {DEMO_ACCOUNTS.map((acc) => (
-                <div
-                  key={acc.role}
-                  className="rounded-2xl border border-brand-border bg-brand-bg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-brand-text">
-                        {acc.label}
-                      </span>
-                      <Badge tone="accent">{acc.city}</Badge>
-                    </div>
-                    <p className="text-xs text-brand-text-secondary">
-                      {acc.description}
-                    </p>
-                    <p className="text-[11px] font-mono text-brand-muted-fg flex items-center gap-1.5">
-                      <KeyRound className="h-3 w-3" />
-                      {acc.email} · {acc.passcodeLabel}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      const sess = loginDemoRole(acc.role);
-                      if (!sess) {
-                        pushToast({
-                          title: "Account blocked or removed",
-                          description:
-                            "This account has been blocked or deleted in Admin moderation.",
-                          type: "error",
-                        });
-                        return;
-                      }
-                      pushToast({
-                        title: `Signed in as ${sess.name}`,
-                        description: `Opened ${acc.label}`,
-                        type: "success",
-                      });
-                      router.push(acc.redirectHref);
-                    }}
-                  >
-                    Enter Portal
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2 pt-2 text-xs text-brand-muted-fg">
-              <ShieldCheck className="h-4 w-4 text-brand-success shrink-0" />
-              <span>
-                Production RBAC, Zod validation, and Prisma schema included for
-                backend cutover.
-              </span>
-            </div>
+            <Button asChild variant="accent" size="md" className="w-full sm:w-auto">
+              <Link href="/become-a-designer">
+                Register as a Designer
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </div>
+
+          {!isDesignerIntent && (
+            <div className="gyd-card p-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4.5 w-4.5 text-brand-accent" />
+                <h2 className="font-editorial text-xl font-semibold text-brand-text">
+                  Customer Demo Preview
+                </h2>
+              </div>
+              <p className="text-xs text-brand-text-secondary leading-relaxed">
+                Explore the client booking experience using the demonstration
+                customer account below.
+              </p>
+
+              <div className="space-y-3">
+                {customerDemoAccounts.map((acc) => (
+                  <div
+                    key={acc.role}
+                    className="rounded-2xl border border-brand-border bg-brand-bg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-brand-text">
+                          {acc.label}
+                        </span>
+                        <Badge tone="accent">{acc.city}</Badge>
+                      </div>
+                      <p className="text-xs text-brand-text-secondary">
+                        {acc.description}
+                      </p>
+                      <p className="text-[11px] font-mono text-brand-muted-fg flex items-center gap-1.5">
+                        <KeyRound className="h-3 w-3" />
+                        {acc.email} · {acc.passcodeLabel}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        const sess = loginDemoRole(acc.role);
+                        if (!sess) {
+                          pushToast({
+                            title: "Account blocked or removed",
+                            description:
+                              "This account has been blocked or deleted in Admin moderation.",
+                            type: "error",
+                          });
+                          return;
+                        }
+                        pushToast({
+                          title: `Signed in as ${sess.name}`,
+                          description: `Opened ${acc.label}`,
+                          type: "success",
+                        });
+                        router.push(acc.redirectHref);
+                      }}
+                    >
+                      Enter Portal
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 text-xs text-brand-muted-fg">
+                <ShieldCheck className="h-4 w-4 text-brand-success shrink-0" />
+                <span>
+                  Role-isolated workspaces keep Customer, Designer, and Admin
+                  portals separated.
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-brand-bg flex items-center justify-center px-4 py-12 text-sm text-brand-muted-fg">
+          Loading sign in...
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
